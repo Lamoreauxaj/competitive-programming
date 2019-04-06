@@ -33,14 +33,18 @@ struct Treap {
         update(tree);
     }
 
-    static void insert(Node*& tree, Node* it) {
+    static void insertH(Node*& tree, Node* it) {
         if (!tree)
             tree = it;
         else if (it->prior > tree->prior)
             split(tree, it->key, it->left, it->right), tree = it;
         else
-            insert(it->key < tree->key ? tree->left : tree->right, it);
+            insertH(it->key < tree->key ? tree->left : tree->right, it);
         update(tree);
+    }
+
+    static void insert(Node*& tree, int v) {
+        insertH(tree, new Node(v));
     }
 
     static void merge(Node*& tree, Node* left, Node* right) {
@@ -71,41 +75,49 @@ struct Treap {
         else
             return tree->key;
     }
+
+    static int lowerBound(Node* tree, int x) {
+        if (!tree) return 0;
+        int rightSize = (tree->right ? tree->right->size : 0);
+        if (x <= tree->key)
+            return rightSize + 1 + lowerBound(tree->left, x);
+        else
+            return lowerBound(tree->right, x);
+    }
+
+    static int upperBound(Node* tree, int x) {
+        if (!tree) return 0;
+        int rightSize = (tree->right ? tree->right->size : 0);
+        if (x < tree->key)
+            return rightSize + 1 + upperBound(tree->left, x);
+        else
+            return upperBound(tree->right, x);
+    }
 };
 
-int N, K;
-vector<int> arr;
+int N, Q;
+Treap::Node* tree;
+vector<int> v;
 
 int main() {
     ios_base::sync_with_stdio(false);
 
-    cin >> N >> K;
-    arr.assign(N, 0);
-    for (int i = 0; i < N; i++)
-        cin >> arr[i];
-
-    Treap::Node* tree = NULL;
-    for (int i = 0; i < K - 1; i++)
-        Treap::insert(tree, new Treap::Node(arr[i]));
-
-    for (int i = K - 1; i < N; i++) {
-        Treap::insert(tree, new Treap::Node(arr[i]));
-        long long m = Treap::get(tree, (K - 1) / 2);
-        Treap::Node *left, *right;
-        Treap::split(tree, m, left, right);
-        
-        long long cost = 0;
-        if (left)
-            cost += m * left->size - left->sum;
-        if (right)
-            cost += right->sum - m * right->size;
-        if (i > K - 1) cout << " ";
-        cout << cost;
-
-        Treap::merge(tree, left, right);
-        Treap::erase(tree, arr[i - K + 1]);
+    cin >> N >> Q;
+    v.assign(N, 0);
+    for (int i = 0; i < N; i++) {
+        int a; cin >> a;
+        v[i] = a;
+        Treap::insert(tree, a);
     }
-    cout << "\n";
+
+    for (int i = 0; i < Q; i++) {
+        char a; cin >> a;
+        int x, y; cin >> x >> y;
+        if (a == '!')
+            Treap::erase(tree, v[x - 1]), Treap::insert(tree, y), v[x - 1] = y;
+        else
+            cout << Treap::lowerBound(tree, x) - Treap::upperBound(tree, y) << "\n";
+    }
 
     return 0;
 }
